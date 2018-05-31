@@ -125,8 +125,8 @@ my$OTH_c=sub{$oth_c=$B[7];$oth_c=~s/.*\;AC_OTH\=//;$oth_c=~s/\;.*\n//;@Oth_c=spl
 			my$max=max(@aF);		# largest af_popmax for AA-level match
 
 			# find the second largest AF_POPMAX
-			my@second=sort{$a<=>$b}@aF;		# sort ascending
-			my$x=@aF;						# number of elements in the sorted array
+			my@second=sort{$a<=>$b}@aF;	# sort ascending
+			my$x=@aF;			# number of elements in the sorted array
 			if($x>=2){$sec=$second[-2]}
 			else{$sec=0}
 
@@ -176,7 +176,7 @@ my$OTH_c=sub{$oth_c=$B[7];$oth_c=~s/.*\;AC_OTH\=//;$oth_c=~s/\;.*\n//;@Oth_c=spl
 			print"popmax\_$q\=@pop\,";	# individual alt-specific popmax array
 			print"\;";
 			}
-		my$pop=@POP;					# number of popmax in @POP
+		my$pop=@POP;				# number of popmax in @POP
 		print"POPMAX_c\=@POP\;";		# all-alts comprising popmax array
 		
 		if($pop>$alts){print"multiple_popmax\,";$multiple++}
