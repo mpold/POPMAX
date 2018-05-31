@@ -12,14 +12,14 @@ my$single=0;		# single alt variants
 my$multiple=0;		# multiple alts variants
 my$popmax_error=0;	# analysis errors
 
-my$true=0;			# concordant POPMAX
-my$false=0;			# discordant POPMAX
+my$true=0;		# concordant POPMAX
+my$false=0;		# discordant POPMAX
 my$true_s=0;		# concordant if only single alt/POPMAX observed
 my$true_m=0;		# concordant if multiple alts/POPMAX observed
 my$false_s=0;		# discordant if only single alt/POPMAX observed
 my$false_m=0;		# discordant if multiple alts/POPMAX observed
-my$LINE=0;			# lines/variants analyzed
-my$fin=0;			# count FIN if discordant
+my$LINE=0;		# lines/variants analyzed
+my$fin=0;		# count FIN if discordant
 
 foreach(my$chr=1;$chr<=24;$chr++){	# analysis carried out on 24 individual chromosome files
 
@@ -228,11 +228,11 @@ else{print"QC\,FAIL\n"}
 print"\* - more than one population other than OTH produces the maximum known allele frequency\n";
 print"\n";
 
-my$d=($false/$true)*100;					# % disccordance between gnomAD and this scrip's results
-my$d_s=($false_s/$true_s)*100;				# % discorcance for single alt-variants
+my$d=($false/$true)*100;			# % disccordance between gnomAD and this scrip's results
+my$d_s=($false_s/$true_s)*100;			# % discorcance for single alt-variants
 if($true_m>0){$d_m=($false_m/$true_m)*100}	# % discorcance for multiple-alt variants
 if($true_m==0){$d_m=100}
-my$d_fin=100*$fin/$false;					# % discordance associated with FIN
+my$d_fin=100*$fin/$false;			# % discordance associated with FIN
 
 print"\,ALL\,SINGELE ALT\,MULTIPLE ALTS\n";
 print"Concordant\,$true\,$true_s\,$true_m\n";
