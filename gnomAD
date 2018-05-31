@@ -12,13 +12,13 @@ my$single=0;		# single alt variants
 my$multiple=0;		# multiple alts variants
 my$popmax_error=0;	# analysis errors
 
-my$true=0;			# concordant POPMAX
-my$false=0;			# discordant POPMAX
+my$true=0;		# concordant POPMAX
+my$false=0;		# discordant POPMAX
 my$true_s=0;		# concordant if only single alt/POPMAX observed
 my$true_m=0;		# concordant if multiple alts/POPMAS observe
 my$false_s=0;		# discordant if only single alt/POPMAX observed
 my$false_m=0;		# discordant if multiple alts/POPMAX observed
-my$LINE=0;			# lines/variants analyzed
+my$LINE=0;		# lines/variants analyzed
 
 foreach(my$chr=1;$chr<=24;$chr++){	# analysis carried out on 24 individual chromosome files
 
@@ -133,7 +133,7 @@ my$ASJ_c=sub{$asj_c=$B[7];$asj_c=~s/.*\;AC_ASJ\=//;$asj_c=~s/\;.*\n//;@Asj_c=spl
 
 			# find the second largest AF_POPMAX
 			my@second=sort{$a<=>$b}@aF;		# sort ascending
-			my$x=@aF;						# number of elements in the sorted array
+			my$x=@aF;				# number of elements in the sorted array
 			
 			if($x>=2){$sec=$second[-2]}
 			else{$sec=0}
@@ -188,7 +188,7 @@ my$ASJ_c=sub{$asj_c=$B[7];$asj_c=~s/.*\;AC_ASJ\=//;$asj_c=~s/\;.*\n//;@Asj_c=spl
 			print"popmax\_$q\=@pop\,";	# individual alt-specific popmax array
 			print"\;";
 			}
-		my$pop=@POP;					# number of popmax in @POP
+		my$pop=@POP;				# number of popmax in @POP
 		print"POPMAX_c\=@POP\;";		# all-alts comprising popmax array
 		
 		if($pop>$alts){print"multiple_popmax\,";$multiple++}
@@ -233,8 +233,8 @@ else{print"QC\,FAIL\n"}
 print"\* - more than one population other than OTH produces the maximum known allele frequency\n";
 print"\n";
 
-my$d=($false/$true)*100;					# % disccordance between gnomAD and this scrip's results
-my$d_s=($false_s/$true_s)*100;				# % discorcance for single alt-variants
+my$d=($false/$true)*100;			# % disccordance between gnomAD and this scrip's results
+my$d_s=($false_s/$true_s)*100;			# % discorcance for single alt-variants
 if($true_m>0){$d_m=($false_m/$true_m)*100}	# % discorcance for multiple-alt variants
 if($true_m==0){$d_m=100}
 
