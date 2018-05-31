@@ -239,7 +239,7 @@ print"Concordant\,$true\,$true_s\,$true_m\n";
 print"Discordant\,$false\,$false_s\,$false_m\n";
 print"%Discordant\,$d\,$d_s\,$d_m\n";
 print"FIN\,$fin\,\n";
-print"%FIN\,$d_fin\,\n\n";
+print"%FIN\-discordance\,$d_fin\,\n\n";
 print"\n\n";
 close(O);
 
