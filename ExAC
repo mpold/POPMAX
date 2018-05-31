@@ -1,0 +1,246 @@
+# split  source file, ExAC.r0.3.1.sites.vep.vcf, into 24-chromosomes before using this script
+# 
+#!/usr/bin/perl -w
+use warnings;
+use Data::Dumper;
+use POSIX;
+use List::Util qw[min max];
+
+my$db="C:/zGRCh37/ExAC";
+
+my$single=0;		# single alt variants
+my$multiple=0;		# multiple alts variants
+my$popmax_error=0;	# analysis errors
+
+my$true=0;			# concordant POPMAX
+my$false=0;			# discordant POPMAX
+my$true_s=0;		# concordant if only single alt/POPMAX observed
+my$true_m=0;		# concordant if multiple alts/POPMAX observed
+my$false_s=0;		# discordant if only single alt/POPMAX observed
+my$false_m=0;		# discordant if multiple alts/POPMAX observed
+my$LINE=0;			# lines/variants analyzed
+my$fin=0;			# count FIN if discordant
+
+foreach(my$chr=1;$chr<=24;$chr++){	# analysis carried out on 24 individual chromosome files
+
+opendir(D,"$db/$chr");
+
+my@file=grep{/^$chr\_/}readdir D;	# only the splits are abbreviated
+										# the whole chromosome file takes too long
+foreach my$file(@file){
+
+	open(I,"$db/$chr/$file");open(O,">>$db/$chr/a\_$file");select(O);while(<I>){
+		# substitute X and Y for 23, and 24, respectively
+		s/^chrX\t/chr23\t/;s/^chrY\t/chr24\t/;
+		my@B=split/\t/;
+		print"$B[0]\t";
+		print"$B[1]\t";
+		print"$B[2]\t";
+		print"$B[3]\t";		# ref
+		print"$B[4]\t";		# alt
+		print"\.\t";
+		print"\.\t";
+
+# get the number of alts (if multiple then they are comma-separated)
+my$Alts=sub{@alts=split"\,",$B[4];$alts=@alts};$Alts->();	
+
+# get the observed allele frequencies	
+my$AF=sub{$af=$B[7];$af=~s/.*\;AF\=//;$af=~s/\;.*\n//;@Af=split"\,",$af};$AF->();
+print"AF\=@Af\;";
+# number of allele frequencies, equals the number of alts in the alt-field
+my$p=@Af-1;
+
+# get the computed/expected POPMAX values (from the source file)
+my$POPMAX=sub{$popmax=$B[7];$popmax=~s/.*\;POPMAX\=//;$popmax=~s/\;.*\n//;@Popmax=split"\,",$popmax};$POPMAX->();
+print"POPMAX\_e\=@Popmax\;";
+
+# n - number of alleles
+# c - allele count
+# f - allele frequency
+# 
+##INFO=<ID=AC_AFR,Number=A,Type=Integer,Description="African/African American Allele Counts">
+##INFO=<ID=AC_AMR,Number=A,Type=Integer,Description="American Allele Counts">
+##INFO=<ID=AC_Adj,Number=A,Type=Integer,Description="Adjusted Allele Counts">
+##INFO=<ID=AC_EAS,Number=A,Type=Integer,Description="East Asian Allele Counts">
+##INFO=<ID=AC_FIN,Number=A,Type=Integer,Description="Finnish Allele Counts">
+##INFO=<ID=AC_NFE,Number=A,Type=Integer,Description="Non-Finnish European Allele Counts">
+##INFO=<ID=AC_OTH,Number=A,Type=Integer,Description="Other Allele Counts">
+##INFO=<ID=AC_SAS,Number=A,Type=Integer,Description="South Asian Allele Counts">
+##INFO=<ID=AN_AFR,Number=1,Type=Integer,Description="African/African American Chromosome Count">
+##INFO=<ID=AN_AMR,Number=1,Type=Integer,Description="American Chromosome Count">
+##INFO=<ID=AN_EAS,Number=1,Type=Integer,Description="East Asian Chromosome Count">
+##INFO=<ID=AN_FIN,Number=1,Type=Integer,Description="Finnish Chromosome Count">
+##INFO=<ID=AN_NFE,Number=1,Type=Integer,Description="Non-Finnish European Chromosome Count">
+##INFO=<ID=AN_OTH,Number=1,Type=Integer,Description="Other Chromosome Count">
+##INFO=<ID=AN_SAS,Number=1,Type=Integer,Description="South Asian Chromosome Count">
+
+# --- get population-specific allele counts and numbers ---------
+my$AFR_n=sub{$afr_n=$B[7];$afr_n=~s/.*\;AN_AFR\=//;$afr_n=~s/\;.*\n//;@Afr_n=split"\,",$afr_n};$AFR_n->();
+my$AFR_c=sub{$afr_c=$B[7];$afr_c=~s/.*\;AC_AFR\=//;$afr_c=~s/\;.*\n//;@Afr_c=split"\,",$afr_c};$AFR_c->();
+my$AMR_n=sub{$amr_n=$B[7];$amr_n=~s/.*\;AN_AMR\=//;$amr_n=~s/\;.*\n//;@Amr_n=split"\,",$amr_n};$AMR_n->();
+my$AMR_c=sub{$amr_c=$B[7];$amr_c=~s/.*\;AC_AMR\=//;$amr_c=~s/\;.*\n//;@Amr_c=split"\,",$amr_c};$AMR_c->();
+my$EAS_n=sub{$eas_n=$B[7];$eas_n=~s/.*\;AN_EAS\=//;$eas_n=~s/\;.*\n//;@Eas_n=split"\,",$eas_n};$EAS_n->();
+my$EAS_c=sub{$eas_c=$B[7];$eas_c=~s/.*\;AC_EAS\=//;$eas_c=~s/\;.*\n//;@Eas_c=split"\,",$eas_c};$EAS_c->();
+my$FIN_n=sub{$fin_n=$B[7];$fin_n=~s/.*\;AN_FIN\=//;$fin_n=~s/\;.*\n//;@Fin_n=split"\,",$fin_n};$FIN_n->();
+my$FIN_c=sub{$fin_c=$B[7];$fin_c=~s/.*\;AC_FIN\=//;$fin_c=~s/\;.*\n//;@Fin_c=split"\,",$fin_c};$FIN_c->();
+my$NFE_n=sub{$nfe_n=$B[7];$nfe_n=~s/.*\;AN_NFE\=//;$nfe_n=~s/\;.*\n//;@Nfe_n=split"\,",$nfe_n};$NFE_n->();
+my$NFE_c=sub{$nfe_c=$B[7];$nfe_c=~s/.*\;AC_NFE\=//;$nfe_c=~s/\;.*\n//;@Nfe_c=split"\,",$nfe_c};$NFE_c->();
+my$SAS_n=sub{$sas_n=$B[7];$sas_n=~s/.*\;AN_SAS\=//;$sas_n=~s/\;.*\n//;@Sas_n=split"\,",$sas_n};$SAS_n->();
+my$SAS_c=sub{$sas_c=$B[7];$sas_c=~s/.*\;AC_SAS\=//;$sas_c=~s/\;.*\n//;@Sas_c=split"\,",$sas_c};$SAS_c->();
+my$OTH_n=sub{$oth_n=$B[7];$oth_n=~s/.*\;AN_OTH\=//;$oth_n=~s/\;.*\n//;@Oth_n=split"\,",$oth_n};$OTH_n->();
+my$OTH_c=sub{$oth_c=$B[7];$oth_c=~s/.*\;AC_OTH\=//;$oth_c=~s/\;.*\n//;@Oth_c=split"\,",$oth_c};$OTH_c->();
+		
+		# Observed AF_POPMAX values based the values obtained by the above subroutines
+		# computed separately for each alt
+		for(my$i=0;$i<=$p;$i++){
+		print"AF_POPMAX\=";
+			if($Popmax[$i] eq'NA'){print"\.\,"}
+			if($Popmax[$i] eq'AFR'){if($Afr_n[0]>0){my$Afr_f=$Afr_c[$i]/$Afr_n[0];print"$Afr_f"}}
+			if($Popmax[$i] eq'AMR'){if($Amr_n[0]>0){my$Amr_f=$Amr_c[$i]/$Amr_n[0];print"$Amr_f"}}
+			if($Popmax[$i] eq'EAS'){if($Eas_n[0]>0){my$Eas_f=$Eas_c[$i]/$Eas_n[0];print"$Eas_f"}}
+			if($Popmax[$i] eq'FIN'){if($Fin_n[0]>0){my$Fin_f=$Fin_c[$i]/$Fin_n[0];print"$Fin_f"}}
+			if($Popmax[$i] eq'NFE'){if($Nfe_n[0]>0){my$Nfe_f=$Nfe_c[$i]/$Nfe_n[0];print"$Nfe_f"}}
+			if($Popmax[$i] eq'SAS'){if($Sas_n[0]>0){my$Sas_f=$Sas_c[$i]/$Sas_n[0];print"$Sas_f"}}
+			if($Popmax[$i] eq'OTH'){if($Oth_n[0]>0){my$Oth_f=$Oth_c[$i]/$Oth_n[0];print"$Oth_f"}}
+			print"\;";
+			}
+
+		my@POP;	# array for all POPMAX values
+		for(my$j=0;$j<=$p;$j++){
+		my@aF;	# array for alt-specific AF_POPMAX-values
+		my@pop;	# array for alt-specific POPMAX-values
+		my$q=$j+1;
+			if($Afr_n[0]>0){$f=$Afr_c[$j]/$Afr_n[0];push(@aF,$f)}
+			if($Amr_n[0]>0){$f=$Amr_c[$j]/$Amr_n[0];push(@aF,$f)}
+			if($Eas_n[0]>0){$f=$Eas_c[$j]/$Eas_n[0];push(@aF,$f)}
+			if($Fin_n[0]>0){$f=$Fin_c[$j]/$Fin_n[0];push(@aF,$f)}
+			if($Nfe_n[0]>0){$f=$Nfe_c[$j]/$Nfe_n[0];push(@aF,$f)}
+			if($Sas_n[0]>0){$f=$Sas_c[$j]/$Sas_n[0];push(@aF,$f)}
+			if($Oth_n[0]>0){$f=$Oth_c[$j]/$Oth_n[0];push(@aF,$f)}
+			else{push(@aF,0)}
+
+			# print"$q\=@aF";
+			# print"\;";
+			
+			my$max=max(@aF);		# largest af_popmax for AA-level match
+
+			# find the second largest AF_POPMAX
+			my@second=sort{$a<=>$b}@aF;		# sort ascending
+			my$x=@aF;						# number of elements in the sorted array
+			if($x>=2){$sec=$second[-2]}
+			else{$sec=0}
+
+			if($max>0){print"af_popmax\_$q\=$max"}
+			else{print"af_popmax\_$q\=\."}
+
+			print"\;";
+
+			# get/calculate all (@POP) and alt-specific (@pop) POPMAX-values
+			my$Afr_max=($Afr_n[0]>0)&&($max==$Afr_c[$j]/$Afr_n[0])&&($max>0);
+			my$Amr_max=($Amr_n[0]>0)&&($max==$Amr_c[$j]/$Amr_n[0])&&($max>0);
+			my$Eas_max=($Eas_n[0]>0)&&($max==$Eas_c[$j]/$Eas_n[0])&&($max>0);
+			my$Fin_max=($Fin_n[0]>0)&&($max==$Fin_c[$j]/$Fin_n[0])&&($max>0);
+			my$Nfe_max=($Nfe_n[0]>0)&&($max==$Nfe_c[$j]/$Nfe_n[0])&&($max>0);
+			my$Sas_max=($Sas_n[0]>0)&&($max==$Sas_c[$j]/$Sas_n[0])&&($max>0);
+			my$Oth_max=($Oth_n[0]>0)&&($max==$Oth_c[$j]/$Oth_n[0])&&($max>0);			
+
+			my$Afr_sec=($Afr_n[0]>0)&&($sec==$Afr_c[$j]/$Afr_n[0])&&($sec>0);
+			my$Amr_sec=($Amr_n[0]>0)&&($sec==$Amr_c[$j]/$Amr_n[0])&&($sec>0);
+			my$Eas_sec=($Eas_n[0]>0)&&($sec==$Eas_c[$j]/$Eas_n[0])&&($sec>0);
+			my$Fin_sec=($Fin_n[0]>0)&&($sec==$Fin_c[$j]/$Fin_n[0])&&($sec>0);
+			my$Nfe_sec=($Nfe_n[0]>0)&&($sec==$Nfe_c[$j]/$Nfe_n[0])&&($sec>0);
+			my$Sas_sec=($Sas_n[0]>0)&&($sec==$Sas_c[$j]/$Sas_n[0])&&($sec>0);
+			my$Oth_sec=($Oth_n[0]>0)&&($sec==$Oth_c[$j]/$Oth_n[0]);
+
+			if($max==0){push(@POP,"\.");push(@pop,"\.")}
+			if($Afr_max){push(@POP,"AFR");push(@pop,"AFR")}
+			if($Amr_max){push(@POP,"AMR");push(@pop,"AMR")}
+			if($Eas_max){push(@POP,"EAS");push(@pop,"EAS")}
+			if($Fin_max){push(@POP,"FIN");push(@pop,"FIN")}
+			if($Nfe_max){push(@POP,"NFE");push(@pop,"NFE")}
+			if($Sas_max){push(@POP,"SAS");push(@pop,"SAS")}
+
+			if($Oth_max){
+				if($sec<$max){
+					if($sec>0){
+						if($Afr_sec){push(@POP,"AFR");push(@pop,"AFR")}
+						if($Amr_sec){push(@POP,"AMR");push(@pop,"AMR")}
+						if($Eas_sec){push(@POP,"EAS");push(@pop,"EAS")}
+						if($Fin_sec){push(@POP,"FIN");push(@pop,"FIN")}
+						if($Nfe_sec){push(@POP,"NFE");push(@pop,"NFE")}
+						if($Sas_sec){push(@POP,"SAS");push(@pop,"SAS")}
+						}
+					if($sec==0){push(@POP,"\.");push(@pop,"\.")}
+					}
+				}
+			print"popmax\_$q\=@pop\,";	# individual alt-specific popmax array
+			print"\;";
+			}
+		my$pop=@POP;					# number of popmax in @POP
+		print"POPMAX_c\=@POP\;";		# all-alts comprising popmax array
+		
+		if($pop>$alts){print"multiple_popmax\,";$multiple++}
+		elsif($pop==$alts){print"single_popmax\,";$single++}
+		else{print"popmax_error\,";$popmax_error++}
+		
+		if(/^$chr\t/){$LINE++}			# get the number input variants
+		print"\n";
+		}
+	close(I);close(O);
+	
+	open(I,"$db/$chr/a_$file");open(O,">>$db/$chr/b\_$file");select(O);while(<I>){
+		s/NA/\./g;		# substitute all NA-values for '.' to unify the oritinal and computed POPMAX-fields
+		my@B=split/\t/;
+# get the number of alts (if multiple then they are comma-separated)		
+my$Alts=sub{@alts=split"\,",$B[4];$alts=@alts};$Alts->();
+# get POPMAX values provided by gnomAD (expected values)		
+my$POPMAX_e=sub{$e=$B[7];$e=~s/.*\;POPMAX_e\=//;$e=~s/\;.*\n//};$POPMAX_e->();
+# get POPMAX values computed by this script (ovserved values)
+my$POPMAX_c=sub{$c=$B[7];$c=~s/.*\;POPMAX_c\=//;$c=~s/\;.*\n//};$POPMAX_c->();
+
+		if($e eq$c){print"True\,";$true++;if($alts==1){$true_s++}else{$true_m++}}
+		else{print"False\,";$false++;if($alts==1){$false_s++}else{$false_m++}}
+		
+		print"$c\,$e\,";
+		print$_;
+		}
+	close(I);close(O);
+	
+	# --- get False calls associated with FIN ------------------------
+	open(I,"$db/$chr/b_$file");open(O,">>$db/$chr/False\_$file");select(O);
+		while(<I>){my@B=split/\,/;		
+		if($B[0]eq'False'&&$B[1]=~/FIN/){print;$fin++}
+		}
+	close(I);close(O);
+# unlink("$db/$chr/a\_$file");
+# unlink("$db/$chr/b\_$file");
+	}
+close(D);
+	}
+
+open(O,">>$db/CHK_SUM\.csv");select(O);
+print"single_popmax\,$single\n";
+print"multiple_popmax\*\,$multiple\n";
+print"popmax_error\,$popmax_error\n";
+print"TOTAL,$LINE\n";
+if($single+$multiple+$popmax_error==$LINE){print"QC\,PASS\n"}
+else{print"QC\,FAIL\n"}
+print"\* - more than one population other than OTH produces the maximum known allele frequency\n";
+print"\n";
+
+my$d=($false/$true)*100;					# % disccordance between gnomAD and this scrip's results
+my$d_s=($false_s/$true_s)*100;				# % discorcance for single alt-variants
+if($true_m>0){$d_m=($false_m/$true_m)*100}	# % discorcance for multiple-alt variants
+if($true_m==0){$d_m=100}
+my$d_fin=100*$fin/$false;					# % discordance associated with FIN
+
+print"\,ALL\,SINGELE ALT\,MULTIPLE ALTS\n";
+print"Concordant\,$true\,$true_s\,$true_m\n";
+print"Discordant\,$false\,$false_s\,$false_m\n";
+print"%Discordant\,$d\,$d_s\,$d_m\n";
+print"FIN\,$fin\,\n";
+print"%FIN\,$d_fin\,\n\n";
+print"\n\n";
+close(O);
+
+# my$F=<STDIN>;
