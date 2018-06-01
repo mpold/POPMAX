@@ -6,7 +6,7 @@ use Data::Dumper;
 use POSIX;
 use List::Util qw[min max];
 
-my$db="C:/zGRCh37/gnomAD";
+my$db="";		# enter directory name here
 
 my$single=0;		# single alt variants
 my$multiple=0;		# multiple alts variants
