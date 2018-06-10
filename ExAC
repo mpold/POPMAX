@@ -1,4 +1,4 @@
-# split  source file, ExAC.r0.3.1.sites.vep.vcf, into 24-chromosomes before using this script
+# split  source file, ExAC.r1.sites.vep.vcf, into 24-chromosomes before using this script
 # 
 #!/usr/bin/perl -w
 use warnings;
